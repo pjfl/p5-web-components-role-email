@@ -59,6 +59,7 @@
 TAGS
 Thumbs.db
 \bipc_srlock
+t/ttc
 
 # Avoid archives of this distribution
 \bWeb-Components-Role-Email-v?[\d\.\_]+
