@@ -4,8 +4,8 @@ requires "File::DataClass" => "v0.66.0";
 requires "MIME::Types" => "2.11";
 requires "Moo" => "2.000001";
 requires "Try::Tiny" => "0.22";
-requires "Unexpected" => "v0.40.0";
-requires "Web::Components::Role::TT" => "v0.3.0";
+requires "Unexpected" => "v0.41.0";
+requires "Web::Components::Role::TT" => "v0.4.0";
 requires "namespace::autoclean" => "0.26";
 requires "perl" => "5.010001";
 

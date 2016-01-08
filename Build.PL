@@ -21,8 +21,8 @@ my $prereqs  = {
     'MIME::Types' => '2.11',
     'Moo' => '2.000001',
     'Try::Tiny' => '0.22',
-    'Unexpected' => 'v0.40.0',
-    'Web::Components::Role::TT' => 'v0.3.0',
+    'Unexpected' => 'v0.41.0',
+    'Web::Components::Role::TT' => 'v0.4.0',
     'namespace::autoclean' => '0.26',
     'perl' => '5.010001'
   },
