@@ -2,7 +2,7 @@ package Web::Components::Role::Email;
 
 use 5.010001;
 use namespace::autoclean;
-use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev: 4 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev: 5 $ =~ /\d+/gmx );
 
 use Email::MIME;
 use Encode                     qw( encode );
@@ -157,6 +157,15 @@ __END__
 =pod
 
 =encoding utf-8
+
+=begin html
+
+<a href="https://travis-ci.org/pjfl/p5-web-components-role-email"><img src="https://travis-ci.org/pjfl/p5-web-components-role-email.svg?branch=master" alt="Travis CI Badge"></a>
+<a href="https://roxsoft.co.uk/coverage/report/web-components-role-email/latest"><img src="https://roxsoft.co.uk/coverage/badge/web-components-role-email/latest" alt="Coverage Badge"></a>
+<a href="http://badge.fury.io/pl/Web-Components-Role-Email"><img src="https://badge.fury.io/pl/Web-Components-Role-Email.svg" alt="CPAN Badge"></a>
+<a href="http://cpants.cpanauthors.org/dist/Web-Components-Role-Email"><img src="http://cpants.cpanauthors.org/dist/Web-Components-Role-Email.png" alt="Kwalitee Badge"></a>
+
+=end html
 
 =head1 Name
 

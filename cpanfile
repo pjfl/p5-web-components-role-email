@@ -1,11 +1,11 @@
 requires "Email::MIME" => "1.934";
 requires "Email::Sender" => "1.300018";
-requires "File::DataClass" => "v0.66.0";
+requires "File::DataClass" => "v0.68.0";
 requires "MIME::Types" => "2.11";
 requires "Moo" => "2.000001";
 requires "Try::Tiny" => "0.22";
-requires "Unexpected" => "v0.41.0";
-requires "Web::Components::Role::TT" => "v0.4.0";
+requires "Unexpected" => "v0.43.0";
+requires "Web::Components::Role::TT" => "v0.5.0";
 requires "namespace::autoclean" => "0.26";
 requires "perl" => "5.010001";
 
