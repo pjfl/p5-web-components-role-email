@@ -2,7 +2,7 @@ package Web::Components::Role::Email;
 
 use 5.010001;
 use namespace::autoclean;
-use version; our $VERSION = qv( sprintf '0.2.%d', q$Rev: 2 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.2.%d', q$Rev: 3 $ =~ /\d+/gmx );
 
 use Email::MIME;
 use Encode                     qw( encode );
@@ -86,7 +86,7 @@ my $_create_email = sub {
    my $subject  = $args->{subject} // 'No subject';
 
    try   { $subject = encode( 'MIME-Header', $subject, TRUE ) }
-   catch { throw 'Cannot encode subject as MIME-header' };
+   catch { throw 'Cannot encode subject as MIME-Header: [_1]', [ $_ ] };
 
    $email->{header} = [ From => $from, To => $to, Subject => $subject ];
    $email->{body  } = $_get_email_body->( $self, $args );
@@ -94,7 +94,7 @@ my $_create_email = sub {
    try   {
       $encoding and $email->{body} = encode( $encoding, $email->{body}, TRUE );
    }
-   catch { throw 'Cannot encode body as [_1]', [ $encoding ] };
+   catch { throw 'Cannot encode body as [_1]: [_2]', [ $encoding, $_ ] };
 
    exists $args->{attachments} and $_add_attachments->( $args, $email );
 
