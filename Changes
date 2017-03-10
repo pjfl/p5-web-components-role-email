@@ -1,5 +1,6 @@
 Revision history for Web::Components::Role::Email
 
+0.3.1     2017-03-10 22:58:42
           - Toolchain update CVE-2016-1238
           - More defensive encode calls
 
