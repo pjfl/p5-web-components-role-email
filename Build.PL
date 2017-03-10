@@ -17,12 +17,12 @@ my $prereqs  = {
   'requires' => {
     'Email::MIME' => '1.934',
     'Email::Sender' => '1.300018',
-    'File::DataClass' => 'v0.68.0',
+    'File::DataClass' => 'v0.71.0',
     'MIME::Types' => '2.11',
     'Moo' => '2.000001',
     'Try::Tiny' => '0.22',
-    'Unexpected' => 'v0.43.0',
-    'Web::Components::Role::TT' => 'v0.5.0',
+    'Unexpected' => 'v0.46.0',
+    'Web::Components::Role::TT' => 'v0.7.0',
     'namespace::autoclean' => '0.26',
     'perl' => '5.010001'
   },
@@ -50,7 +50,7 @@ my $stop     = sub {
 # Not interested in reports below min perl ver
 $] < $perl_ver and $stop->( "Minimum required Perl version is ${perl_ver}" );
 
-Module::Build->new(
+Module::Build->subclass( code => do { local $/; <DATA> } )->new(
    'module_name' => $name,
    'notes'       => { min_perl_version => $perl_ver, testing => $testing->() },
    %{ $prereqs },
@@ -58,3 +58,13 @@ Module::Build->new(
 )->create_build_script;
 
 exit 0;
+
+__DATA__
+
+sub _added_to_INC { # CVE-2016-1238
+  my $self = shift; my %seen;
+
+  for ($self->_default_INC) { $seen{ $_ }++ }
+
+  return grep { not $seen{ $_ }++ } $self->base_dir, @INC;
+}
