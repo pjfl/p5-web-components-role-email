@@ -25,7 +25,7 @@ Web::Components::Role::Email - Role for sending emails
                  subject         => 'Email subject string',
                  to              => 'Recipients email address' };
 
-    $recipient = $self->send_email( $post );
+    $message = $self->send_email( $post );
 
 # Description
 
@@ -40,9 +40,9 @@ Defines no attributes
 
 ## send\_email
 
-    $result_message = $self->send_email( @args );
+    $response_message = $self->send_email( @args );
 
-Sends emails. Returns the recipient address, throws on error. The
+Sends emails. Returns the response message, throws on error. The
 `@args` can be a list of keys and values or a hash reference. The attributes
 defined are;
 

@@ -2,7 +2,7 @@ package Web::Components::Role::Email;
 
 use 5.010001;
 use namespace::autoclean;
-use version; our $VERSION = qv( sprintf '0.3.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.3.%d', q$Rev: 2 $ =~ /\d+/gmx );
 
 use Email::MIME;
 use Encode                     qw( encode );
@@ -123,18 +123,17 @@ my $_transport_email = sub {
 
    my $mailer    = $class->new( $attr );
    my $send_args = { from => $args->{from}, to => $args->{to} };
-   my $result;
+   my $response;
 
-   try   { $result = $mailer->send( $args->{email}, $send_args ) }
+   try   { $response = $mailer->send( $args->{email}, $send_args ) }
    catch { throw $_ };
 
-   $result->can( 'failure' ) and throw $result->message;
+   $response->can( 'failure' ) and throw $response->message;
 
-   (blessed $result and $result->isa( 'Email::Sender::Success' ))
-      or throw 'Send failed: [_1]', [ $result ];
+   (blessed $response and $response->isa( 'Email::Sender::Success' ))
+      or throw 'Send failed: [_1]', [ $response ];
 
-   return ($result->can( 'message' ) and defined $result->message
-           and length $result->message) ? $result->message : 'OK Message sent';
+   return $response;
 };
 
 # Public methods
@@ -147,7 +146,10 @@ sub send_email {
 
    $args->{email} = $_create_email->( $self, $args );
 
-   return $_transport_email->( $self, $args );
+   my $res = $_transport_email->( $self, $args );
+
+   return ($res->can( 'message' ) and defined $res->message
+           and length $res->message) ? $res->message : 'OK Message sent';
 }
 
 sub try_to_send_email {
@@ -196,7 +198,7 @@ Web::Components::Role::Email - Role for sending emails
                 subject         => 'Email subject string',
                 to              => 'Recipients email address' };
 
-   $recipient = $self->send_email( $post );
+   $message = $self->send_email( $post );
 
 =head1 Description
 
@@ -211,9 +213,9 @@ Defines no attributes
 
 =head2 send_email
 
-   $result_message = $self->send_email( @args );
+   $response_message = $self->send_email( @args );
 
-Sends emails. Returns the recipient address, throws on error. The
+Sends emails. Returns the response message, throws on error. The
 C<@args> can be a list of keys and values or a hash reference. The attributes
 defined are;
 
