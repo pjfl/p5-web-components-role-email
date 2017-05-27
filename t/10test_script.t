@@ -5,6 +5,28 @@ use File::DataClass::IO;
 use Scalar::Util qw( blessed );
 use Test::More;
 
+my $message = 'OK id=1dDHQi-0000Xp-Rx';
+
+{  package TestSuccess;
+
+   use Moo;
+
+   extends 'Email::Sender::Success';
+
+   sub message {
+      return $message;
+   }
+}
+{  package TestTransport;
+
+   use Moo;
+
+   extends 'Email::Sender::Transport::Test';
+
+   sub success {
+      return TestSuccess->new;
+   }
+}
 {  package TestConfig;
 
    use File::DataClass::IO;
@@ -19,6 +41,23 @@ use Test::More;
    # For Role::Email (optional)
    has 'email_attr'     => is => 'ro', builder => sub { { charset => 'UTF-8' }};
    has 'transport_attr' => is => 'ro', builder => sub { { class => 'Test' } };
+}
+
+{  package TestConfig2;
+
+   use File::DataClass::IO;
+   use Moo;
+
+   # For Role::TT
+   has 'layout'  => is => 'ro', default => 'standard';
+   has 'root'    => is => 'ro', builder => sub { io[ 't', 'root' ] };
+   has 'skin'    => is => 'ro', default => 'default';
+   has 'tempdir' => is => 'ro', builder => sub { io[ 't' ] };
+
+   # For Role::Email (optional)
+   has 'email_attr'     => is => 'ro', builder => sub { { charset => 'UTF-8' }};
+   has 'transport_attr' => is => 'ro', builder => sub { {
+      class => '+TestTransport' } };
 }
 
 my $logged_error = q();
@@ -41,7 +80,18 @@ my $logged_error = q();
    with 'Web::Components::Role::Email';
 }
 
-my $test = Test->new;
+{  package Test2;
+
+   use Moo;
+
+   # Role::Email requires config and log
+   has 'config' => is => 'ro', builder => sub { TestConfig2->new };
+   has 'log'    => is => 'ro', builder => sub { TestLog->new };
+
+   with 'Web::Components::Role::Email';
+}
+
+my $test = Test->new; my $test2 = Test2->new;
 
 can_ok $test, 'send_email';
 
@@ -67,14 +117,21 @@ my $res = eval { $test->send_email( {
    to   => 'john@nowhere.com',
    body => 'This is the message body', } ) };
 
-is $res, 'OK Message sent', 'Test send success - with message body';
+is $res, 'OK id=unknown', 'Test send success - with message body';
 
 $res = eval { $test->try_to_send_email( {
    from     => 'dave@example.com',
    to       => 'john@nowhere.com',
    template => 'standard', } ) };
 
-is $res, 'OK Message sent', 'Test send success - from template';
+is $res, 'OK id=unknown', 'Test send success - from template';
+
+my @res = eval { $test->try_to_send_email( {
+   from     => 'dave@example.com',
+   to       => 'john@nowhere.com',
+   template => 'standard', } ) };
+
+is( $res[ 0 ], 'unknown', 'Test send success - wantarray' );
 
 $res = eval { $test->send_email( {
    from     => 'dave@example.com',
@@ -116,23 +173,23 @@ $res = eval { $test->send_email( {
    template    => 'standard', # Standard template calls loc subroutine
    subprovider => TestReq->new, } ) };
 
-is $res, 'OK Message sent', 'Test send success - with subprovider';
+is $res, 'OK id=unknown', 'Test send success - with subprovider';
 is $loc_count, 1, 'Localises text';
 
-$res = eval { $test->send_email( {
+$res = eval { $test2->send_email( {
    from        => 'dave@example.com',
    to          => 'john@nowhere.com',
    template    => 'extended', # Extended template calls foo and loc subroutines
    subprovider => TestReq->new,
    functions   => [ 'foo', 'loc', ], } ) };
 
-is $res, 'OK Message sent', 'Test send success - with functions';
+is $res, $message, 'Test send success - with functions';
 is $foo_count, 1, 'Calls included function';
 is $loc_count, 2, 'Localises text - again';
 
 my $file = io[ 't', 'root', 'not_found.txt' ];
 
-$res = eval { $test->send_email( {
+$res = eval { $test2->send_email( {
    from        => 'dave@example.com',
    to          => 'john@nowhere.com',
    body        => 'This is the message body',
@@ -142,13 +199,15 @@ like $e, qr{ \Qnot_found\E .* \Qcannot open\E }mx, 'Non existant attachment';
 
 $file = io[ 't', 'root', 'attachment.txt' ];
 
-$res = eval { $test->send_email( {
+$message = q();
+
+$res = eval { $test2->send_email(
    from        => 'dave@example.com',
    to          => 'john@nowhere.com',
    body        => 'This is the message body',
-   attachments => { file => $file->pathname }, } ) }; $e = $EVAL_ERROR;
+   attachments => { file => $file->pathname }, ) }; $e = $EVAL_ERROR;
 
-is $res, 'OK Message sent', 'Test send success - with attachment';
+is $res, 'OK id=unknown', 'Test send success - with attachment';
 
 done_testing;
 

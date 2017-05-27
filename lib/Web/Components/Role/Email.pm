@@ -2,7 +2,7 @@ package Web::Components::Role::Email;
 
 use 5.010001;
 use namespace::autoclean;
-use version; our $VERSION = qv( sprintf '0.3.%d', q$Rev: 2 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.3.%d', q$Rev: 3 $ =~ /\d+/gmx );
 
 use Email::MIME;
 use Encode                     qw( encode );
@@ -148,17 +148,26 @@ sub send_email {
 
    my $res = $_transport_email->( $self, $args );
 
-   return ($res->can( 'message' ) and defined $res->message
-           and length $res->message) ? $res->message : 'OK Message sent';
+   my $id = 'unknown'; my $message = "OK id=${id}";
+
+   if ($res->can( 'message' )) {
+      $res->message and $message = $res->message;
+      ($id) = $message =~ m{ ^ OK \s+ id= (.+) $ }msx; chomp $id;
+   }
+
+   return wantarray ? ($id, $message) : $message;
 }
 
 sub try_to_send_email {
-   my ($self, @args) = @_; my $res;
+   my ($self, @args) = @_; my $wantarray = wantarray; my @res; my $res;
 
-   try   { $res = $self->send_email( @args ) }
+   try   {
+      if ($wantarray) { @res = $self->send_email( @args ) }
+      else { $res = $self->send_email( @args ) }
+   }
    catch { $self->log->error( $res = $_ ) };
 
-   return $res;
+   return $wantarray ? @res : $res;
 }
 
 1;
@@ -200,6 +209,10 @@ Web::Components::Role::Email - Role for sending emails
 
    $message = $self->send_email( $post );
 
+   # or
+
+   ($id, $message) = $self->send_email( $post );
+
 =head1 Description
 
 Supports multiple transports, attachments and multilingual templates for
@@ -214,10 +227,13 @@ Defines no attributes
 =head2 send_email
 
    $response_message = $self->send_email( @args );
+   ($id, $response_message) = $self->send_email( @args );
 
-Sends emails. Returns the response message, throws on error. The
-C<@args> can be a list of keys and values or a hash reference. The attributes
-defined are;
+Sends emails. Returns the response message in a scalar context, throws on
+error. In a list context returns the id of the sent message and the response
+message. The id is parsed from the response message using a simple regular
+expression . The C<@args> can be a list of keys and values or a hash
+reference. The attributes defined are;
 
 =over 3
 

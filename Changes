@@ -1,5 +1,6 @@
 Revision history for Web::Components::Role::Email
 
+          - Send email returns message id in a list context
           - Pod update
 
 0.3.1     2017-03-10 22:58:42

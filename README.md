@@ -27,6 +27,10 @@ Web::Components::Role::Email - Role for sending emails
 
     $message = $self->send_email( $post );
 
+    # or
+
+    ($id, $message) = $self->send_email( $post );
+
 # Description
 
 Supports multiple transports, attachments and multilingual templates for
@@ -41,10 +45,13 @@ Defines no attributes
 ## send\_email
 
     $response_message = $self->send_email( @args );
+    ($id, $response_message) = $self->send_email( @args );
 
-Sends emails. Returns the response message, throws on error. The
-`@args` can be a list of keys and values or a hash reference. The attributes
-defined are;
+Sends emails. Returns the response message in a scalar context, throws on
+error. In a list context returns the id of the sent message and the response
+message. The id is parsed from the response message using a simple regular
+expression . The `@args` can be a list of keys and values or a hash
+reference. The attributes defined are;
 
 - `attachments`
 
