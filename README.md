@@ -62,7 +62,7 @@ reference. The attributes defined are;
 - `attributes`
 
     A hash reference that is applied to the email when it is created. Typical keys
-    are; `content_type` and `charset`. See [Email::MIME](https://metacpan.org/pod/Email::MIME). This is merged onto
+    are; `content_type` and `charset`. See [Email::MIME](https://metacpan.org/pod/Email%3A%3AMIME). This is merged onto
     the `email_attr` configuration hash reference if it exists
 
 - `body`
@@ -104,7 +104,7 @@ reference. The attributes defined are;
 - `template`
 
     If it exists then the template is rendered and used as the body contents.
-    See the [layout](https://metacpan.org/pod/Web::Components::Role::TT#templates) attribute
+    See the [layout](https://metacpan.org/pod/Web%3A%3AComponents%3A%3ARole%3A%3ATT#templates) attribute
 
 - `to`
 
@@ -125,13 +125,13 @@ None
 
 # Dependencies
 
-- [Email::MIME](https://metacpan.org/pod/Email::MIME)
-- [Email::Sender](https://metacpan.org/pod/Email::Sender)
+- [Email::MIME](https://metacpan.org/pod/Email%3A%3AMIME)
+- [Email::Sender](https://metacpan.org/pod/Email%3A%3ASender)
 - [Encode](https://metacpan.org/pod/Encode)
-- [MIME::Types](https://metacpan.org/pod/MIME::Types)
+- [MIME::Types](https://metacpan.org/pod/MIME%3A%3ATypes)
 - [Moo](https://metacpan.org/pod/Moo)
 - [Unexpected](https://metacpan.org/pod/Unexpected)
-- [Web::Components::Role::TT](https://metacpan.org/pod/Web::Components::Role::TT)
+- [Web::Components::Role::TT](https://metacpan.org/pod/Web%3A%3AComponents%3A%3ARole%3A%3ATT)
 
 # Incompatibilities
 

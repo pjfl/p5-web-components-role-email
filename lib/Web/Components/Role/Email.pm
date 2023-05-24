@@ -7,9 +7,10 @@ use version; our $VERSION = qv( sprintf '0.3.%d', q$Rev: 3 $ =~ /\d+/gmx );
 use Email::MIME;
 use Encode                     qw( encode );
 use File::DataClass::Constants qw( EXCEPTION_CLASS TRUE );
-use File::DataClass::Functions qw( ensure_class_loaded is_hashref );
+use File::DataClass::Functions qw( ensure_class_loaded );
 use File::DataClass::IO;
 use MIME::Types;
+use Ref::Util                  qw( is_hashref );
 use Scalar::Util               qw( blessed weaken );
 use Try::Tiny;
 use Unexpected::Functions      qw( Unspecified throw );
@@ -24,18 +25,21 @@ my $_add_attachments = sub {
    my ($args, $email) = @_;
 
    my $types = MIME::Types->new( only_complete => TRUE );
-   my $part  = Email::MIME->create
-      ( attributes => $email->{attributes}, body => delete $email->{body} );
+   my $part  = Email::MIME->create(
+      attributes => $email->{attributes}, body => delete $email->{body}
+   );
 
-   $email->{parts} = [ $part ];
+   $email->{parts} = [$part];
 
    for my $name (sort keys %{ $args->{attachments} }) {
-      my $path = io( $args->{attachments}->{ $name } )->binary->lock;
+      my $path = io( $args->{attachments}->{$name} )->binary->lock;
       my $mime = $types->mimeTypeOf( my $file = $path->basename );
-      my $attr = { content_type => $mime->type,
-                   encoding     => $mime->encoding,
-                   filename     => $file,
-                   name         => $name };
+      my $attr = {
+         content_type => $mime->type,
+         encoding     => $mime->encoding,
+         filename     => $file,
+         name         => $name,
+      };
 
       $part = Email::MIME->create( attributes => $attr, body => $path->all );
       push @{ $email->{parts} }, $part;
@@ -45,72 +49,81 @@ my $_add_attachments = sub {
 };
 
 my $_make_f = sub {
-   my ($obj, $f) = @_; weaken $obj; return sub { $obj->$f( @_ ) };
+   my ($obj, $f) = @_; weaken $obj; return sub { $obj->$f(@_) };
 };
 
 my $_stash_functions = sub {
-   my ($self, $obj, $stash, $funcs) = @_; defined $obj or return;
+   my ($self, $obj, $stash, $funcs) = @_;
 
-   $funcs //= []; $funcs->[ 0 ] or push @{ $funcs }, 'loc';
+   return unless defined $obj;
 
-   for my $f (@{ $funcs }) { $stash->{ $f } = $_make_f->( $obj, $f ) }
+   $funcs //= []; push @{ $funcs }, 'loc' unless $funcs->[0];
+
+   for my $f (@{ $funcs }) { $stash->{ $f } = $_make_f->($obj, $f) }
 
    return;
 };
 
 my $_get_email_body = sub {
-   my ($self, $args) = @_; my $obj = delete $args->{subprovider};
+   my ($self, $args) = @_;
 
-   exists $args->{body} and defined $args->{body} and return $args->{body};
+   my $obj = delete $args->{subprovider};
 
-   $args->{template} or throw Unspecified, [ 'template' ];
+   return $args->{body} if exists $args->{body} and defined $args->{body};
+
+   throw Unspecified, [ 'template' ] unless $args->{template};
 
    my $stash = $args->{stash} //= {}; $stash->{page} //= {};
 
    $stash->{page}->{layout} //= $args->{template};
 
-   $_stash_functions->( $self, $obj, $stash, $args->{functions} );
+   $_stash_functions->($self, $obj, $stash, $args->{functions});
 
-   return $self->render_template( $stash );
+   return $self->render_template($stash);
 };
 
 my $_create_email = sub {
-   my ($self, $args) = @_; $args->{email} and return $args->{email};
+   my ($self, $args) = @_;
+
+   return $args->{email} if $args->{email};
 
    my $conf     = $self->config;
-   my $attr     = $conf->can( 'email_attr' ) ? $conf->email_attr : {};
+   my $attr     = $conf->can('email_attr') ? $conf->email_attr : {};
    my $email    = { attributes => { %{ $attr }, %{ $args->{attributes} // {}}}};
-   my $from     = $args->{from} or throw Unspecified, [ 'from' ];
-   my $to       = $args->{to  } or throw Unspecified, [ 'to'   ];
+   my $from     = $args->{from} or throw Unspecified, ['from'];
+   my $to       = $args->{to  } or throw Unspecified, ['to'];
    my $encoding = $email->{attributes}->{charset};
    my $subject  = $args->{subject} // 'No subject';
 
-   try   { $subject = encode( 'MIME-Header', $subject, TRUE ) }
-   catch { throw 'Cannot encode subject as MIME-Header: [_1]', [ $_ ] };
+   try   { $subject = encode('MIME-Header', $subject, TRUE) }
+   catch { throw 'Cannot encode subject as MIME-Header: [_1]', [$_] };
 
    $email->{header} = [ From => $from, To => $to, Subject => $subject ];
-   $email->{body  } = $_get_email_body->( $self, $args );
+   $email->{body  } = $_get_email_body->($self, $args);
 
    try   {
-      $encoding and $email->{body} = encode( $encoding, $email->{body}, TRUE );
+      $email->{body} = encode($encoding, $email->{body}, TRUE) if $encoding;
    }
-   catch { throw 'Cannot encode body as [_1]: [_2]', [ $encoding, $_ ] };
+   catch { throw 'Cannot encode body as [_1]: [_2]', [$encoding, $_] };
 
-   exists $args->{attachments} and $_add_attachments->( $args, $email );
+   $_add_attachments->($args, $email) if exists $args->{attachments};
 
    return Email::MIME->create( %{ $email } );
 };
 
 my $_transport_email = sub {
-   my ($self, $args) = @_; $args->{email} or throw Unspecified, [ 'email' ];
+   my ($self, $args) = @_;
+
+   throw Unspecified, ['email'] unless $args->{email};
 
    my $attr = {}; my $conf = $self->config;
 
-   $conf->can( 'transport_attr' ) and $attr = { %{ $conf->transport_attr } };
+   $attr = { %{ $conf->transport_attr } } if $conf->can('transport_attr');
 
-   exists $args->{transport_attr}
-      and $attr = { %{ $attr }, %{ $args->{transport_attr} } };
-   exists $args->{host} and $attr->{host} = $args->{host};
+   $attr = { %{ $attr }, %{ $args->{transport_attr} } }
+      if exists $args->{transport_attr};
+
+   $attr->{host} = $args->{host} if exists $args->{host};
 
    $attr->{host} //= 'localhost'; my $class = delete $attr->{class};
 
@@ -121,17 +134,17 @@ my $_transport_email = sub {
 
    ensure_class_loaded $class;
 
-   my $mailer    = $class->new( $attr );
+   my $mailer    = $class->new($attr);
    my $send_args = { from => $args->{from}, to => $args->{to} };
    my $response;
 
-   try   { $response = $mailer->send( $args->{email}, $send_args ) }
+   try   { $response = $mailer->send($args->{email}, $send_args) }
    catch { throw $_ };
 
-   $response->can( 'failure' ) and throw $response->message;
+   throw $response->message if $response->can('failure');
 
-   (blessed $response and $response->isa( 'Email::Sender::Success' ))
-      or throw 'Send failed: [_1]', [ $response ];
+   throw 'Send failed: [_1]', [ $response ]
+      unless blessed $response and $response->isa('Email::Sender::Success');
 
    return $response;
 };
@@ -140,30 +153,33 @@ my $_transport_email = sub {
 sub send_email {
    my ($self, @args) = @_;
 
-   defined $args[ 0 ] or throw Unspecified, [ 'email args' ];
+   throw Unspecified, ['email args'] unless defined $args[0];
 
-   my $args = (is_hashref $args[ 0 ]) ? $args[ 0 ] : { @args };
+   my $args = (is_hashref $args[0]) ? $args[0] : { @args };
 
-   $args->{email} = $_create_email->( $self, $args );
+   $args->{email} = $_create_email->($self, $args);
 
-   my $res = $_transport_email->( $self, $args );
+   my $res = $_transport_email->($self, $args);
 
    my $id = 'unknown'; my $message = "OK id=${id}";
 
-   if ($res->can( 'message' )) {
-      $res->message and $message = $res->message;
-      ($id) = $message =~ m{ ^ OK \s+ id= (.+) $ }msx; chomp $id;
+   if ($res->can('message')) {
+      $message = $res->message if $res->message;
+      ($id) = $message =~ m{ ^ OK \s+ id= (.+) $ }msx;
+      chomp $id;
    }
 
    return wantarray ? ($id, $message) : $message;
 }
 
 sub try_to_send_email {
-   my ($self, @args) = @_; my $wantarray = wantarray; my @res; my $res;
+   my ($self, @args) = @_;
 
-   try   {
-      if ($wantarray) { @res = $self->send_email( @args ) }
-      else { $res = $self->send_email( @args ) }
+   my $wantarray = wantarray; my @res; my $res;
+
+   try {
+      if ($wantarray) { @res = $self->send_email(@args) }
+      else { $res = $self->send_email(@args) }
    }
    catch { $self->log->error( $res = $_ ) };
 

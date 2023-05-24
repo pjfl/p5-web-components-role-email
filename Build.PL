@@ -20,6 +20,7 @@ my $prereqs  = {
     'File::DataClass' => 'v0.71.0',
     'MIME::Types' => '2.11',
     'Moo' => '2.000001',
+    'Ref::Util' => '0.204',
     'Try::Tiny' => '0.22',
     'Unexpected' => 'v0.46.0',
     'Web::Components::Role::TT' => 'v0.7.0',
