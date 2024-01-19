@@ -1,5 +1,6 @@
 Revision history for Web::Components::Role::Email
 
+          - Coding standards
           - Now uses Ref::Util
           - Send email returns message id in a list context
           - Pod update
